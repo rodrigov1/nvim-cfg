@@ -6,7 +6,6 @@ return {
   config = function ()
       ---@type dracula
       local dracula = require "dracula"
-
       dracula.setup({
       transparent = false,
       colors = {
