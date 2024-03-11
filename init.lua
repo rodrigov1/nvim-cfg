@@ -175,6 +175,7 @@ require('lazy').setup {
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
   'hrsh7th/cmp-cmdline',
+  'mfussenegger/nvim-jdtls',
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -335,8 +336,8 @@ require('lazy').setup {
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
 
       -- git
-    vim.keymap.set('n', "<leader>gc", "<cmd>Telescope git_commits<CR>", { desc = "commits"})
-    vim.keymap.set('n', "<leader>gs", "<cmd>Telescope git_status<CR>", { desc = "status" })
+      vim.keymap.set('n', '<leader>gc', '<cmd>Telescope git_commits<CR>', { desc = 'commits' })
+      vim.keymap.set('n', '<leader>gs', '<cmd>Telescope git_status<CR>', { desc = 'status' })
 
       -- Slightly advanced example of overriding default behavior and theme
       -- You can pass additional configuration to telescope to change theme, layout, etc.
@@ -509,6 +510,7 @@ require('lazy').setup {
         -- tsserver = {},
         --
         -- jdtls = {},
+        pyright = {},
         lua_ls = {
           -- cmd = {...},
           -- filetypes { ...},
@@ -543,14 +545,16 @@ require('lazy').setup {
       --    :Mason
       --
       --  You can press `g?` for help in this menu
-      require('mason').setup()
 
+      require('mason').setup()
       -- You can add other tools here that you want Mason to install
       -- for you, so that they are available from within Neovim.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format lua code
         'shfmt', -- Used to format bash code
+        'pyright',
+        'jdtls', -- Eclipse jdt language server
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -565,6 +569,9 @@ require('lazy').setup {
             require('lspconfig')[server_name].setup(server)
           end,
         },
+      }
+      require('lspconfig').pyright.setup {
+        capabilities = capabilities,
       }
     end,
   },
@@ -584,26 +591,28 @@ require('lazy').setup {
       },
     },
     opts = {
+      formatters_by_ft = {
+        lua = { 'stylua' },
+        sh = { 'shfmt' },
+        python = { 'black' },
+        -- Conform can also run multiple formatters sequentially
+        -- You can use a sub-list to tell conform to run *until* a formatter
+        -- is found.
+        -- javascript = { { "prettierd", "prettier" } },
+      },
       format_on_save = {
-        timeout_ms = 200,
+        timeout_ms = 100,
         lsp_fallback = true,
       },
       format_after_save = {
         lsp_fallback = true,
       },
-      formatters_by_ft = {
-        lua = { 'stylua' },
-        sh = { 'shfmt' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use a sub-list to tell conform to run *until* a formatter
-        -- is found.
-        -- javascript = { { "prettierd", "prettier" } },
-      },
       formatters = {
         shfmt = {
           prepend_args = { '-i', '2', '-ci' },
+        },
+        black = {
+          prepend_args = { '--fast' },
         },
         injected = { options = { ignore_errors = true } },
       },
@@ -651,21 +660,21 @@ require('lazy').setup {
       cmp.setup.cmdline('/', {
         mapping = cmp.mapping.preset.cmdline(),
         sources = {
-          { name = 'buffer' }
-        }
+          { name = 'buffer' },
+        },
       })
       cmp.setup.cmdline(':', {
         mapping = cmp.mapping.preset.cmdline(),
         sources = cmp.config.sources({
-          { name = 'path' }
+          { name = 'path' },
         }, {
-            {
-              name = 'cmdline',
-              option = {
-                ignore_cmds = { 'Man', '!' }
-              }
-            }
-          })
+          {
+            name = 'cmdline',
+            option = {
+              ignore_cmds = { 'Man', '!' },
+            },
+          },
+        }),
       })
       ---
       cmp.setup {
@@ -759,7 +768,7 @@ require('lazy').setup {
 
       ---@diagnostic disable-next-line: missing-fields
       require('nvim-treesitter.configs').setup {
-        ensure_installed = { 'bash', 'c', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'cpp', 'java' },
+        ensure_installed = { 'bash', 'c', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'cpp', 'java', 'python' },
         -- Autoinstall languages that are not installed
         auto_install = true,
         highlight = { enable = true },
