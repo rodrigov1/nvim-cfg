@@ -16,6 +16,17 @@ vim.opt.relativenumber = true
 vim.opt.cmdheight = 0
 vim.opt.numberwidth = 2
 vim.opt.conceallevel = 2
+vim.opt.tabstop = 2
+vim.opt.softtabstop = 2
+vim.opt.shiftwidth = 2
+vim.opt.expandtab = true
+
+--- Set-up for web-dev
+vim.opt.encoding = 'utf-8'
+vim.opt.fileencoding = 'utf-8'
+vim.opt.title = true
+vim.opt.smartindent = true
+vim.opt.showcmd = true
 
 -- Don't show the mode, since it's already in status line
 vim.opt.showmode = false
@@ -49,8 +60,10 @@ vim.opt.splitbelow = true
 -- Sets how neovim will display certain whitespace in the editor.
 --  See `:help 'list'`
 --  and `:help 'listchars'`
-vim.opt.list = true
-vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
+-- vim.opt.list = true
+vim.opt.listchars = { tab = '> ', trail = '-', nbsp = '+' }
+vim.opt.list = false
+--vim.opt.nolist = true
 
 -- Preview substitutions live, as you type!
 vim.opt.inccommand = 'split'
@@ -110,7 +123,11 @@ vim.keymap.set('v', '<A-j>', ":m '>+1<cr>gv=gv", { desc = 'Move down' })
 vim.keymap.set('v', '<A-k>', ":m '<-2<cr>gv=gv", { desc = 'Move up' })
 
 -- Lazy
-vim.keymap.set('n', '<space>l', '<cmd>Lazy<cr>', { desc = 'Lazy' })
+vim.keymap.set('n', '<leader>l', '<cmd>Lazy<cr>', { desc = 'Lazy' })
+
+-- Java
+vim.keymap.set('n', '<leader>jc', '<cmd> !javac %<cr>', { desc = 'Compile Java' })
+vim.keymap.set('n', '<leader>jr', '<cmd> terminal <cr>', { desc = 'Run Java' })
 
 ------------------------------- Auto Commands ----------------------------------
 --  See `:help lua-guide-autocommands`
@@ -151,6 +168,17 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
+-- TODO: See if this autocmd can be done different
+-- Set the indent settings for Python files
+vim.api.nvim_exec(
+  [[
+  autocmd FileType python setlocal shiftwidth=2
+  autocmd FileType python setlocal softtabstop=2
+  autocmd FileType python setlocal tabstop=2
+]],
+  false
+)
+
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
@@ -173,7 +201,7 @@ vim.opt.rtp:prepend(lazypath)
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup {
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  -- 'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
   'hrsh7th/cmp-cmdline',
   'mfussenegger/nvim-jdtls',
 
@@ -239,6 +267,7 @@ require('lazy').setup {
         ['<leader>n'] = { name = '[N]eoTree', _ = 'which_key_ignore' },
         ['<leader>g'] = { name = '[G]it util', _ = 'which_key_ignore' },
         ['<leader>b'] = { name = '[B]uffer ', _ = 'which_key_ignore' },
+        ['<leader>j'] = { name = '[J]ava', _ = 'which_key_ignore' },
       }
     end,
   },
@@ -366,6 +395,7 @@ require('lazy').setup {
 
   { -- LSP Configuration & Plugins
     'neovim/nvim-lspconfig',
+    lazy = false,
     dependencies = {
       -- Automatically install LSPs and related tools to stdpath for neovim
       'williamboman/mason.nvim',
@@ -554,7 +584,9 @@ require('lazy').setup {
         'stylua', -- Used to format lua code
         'shfmt', -- Used to format bash code
         'pyright',
+        'ruff-lsp',
         'jdtls', -- Eclipse jdt language server
+        'css-lsp',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -573,12 +605,23 @@ require('lazy').setup {
       require('lspconfig').pyright.setup {
         capabilities = capabilities,
       }
+      local on_attach = function(client, bufnr)
+        if client.name == 'ruff_lsp' then
+          -- Disable hover in favor of Pyright
+          client.server_capabilities.hoverProvider = false
+        end
+      end
+
+      require('lspconfig').ruff_lsp.setup {
+        on_attach = on_attach,
+      }
     end,
   },
 
   { -- Autoformat
     'stevearc/conform.nvim',
     dependencies = { 'mason.nvim' },
+    lazy = false,
     cmd = 'ConformInfo',
     keys = {
       {
@@ -594,7 +637,7 @@ require('lazy').setup {
       formatters_by_ft = {
         lua = { 'stylua' },
         sh = { 'shfmt' },
-        python = { 'black' },
+        -- python = { 'black' },
         -- Conform can also run multiple formatters sequentially
         -- You can use a sub-list to tell conform to run *until* a formatter
         -- is found.
@@ -611,9 +654,9 @@ require('lazy').setup {
         shfmt = {
           prepend_args = { '-i', '2', '-ci' },
         },
-        black = {
-          prepend_args = { '--fast' },
-        },
+        -- black = {
+        --   prepend_args = { '--fast' },
+        -- },
         injected = { options = { ignore_errors = true } },
       },
     },
@@ -768,7 +811,7 @@ require('lazy').setup {
 
       ---@diagnostic disable-next-line: missing-fields
       require('nvim-treesitter.configs').setup {
-        ensure_installed = { 'bash', 'c', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'cpp', 'java', 'python' },
+        ensure_installed = { 'bash', 'c', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'cpp', 'java', 'python', 'javascript', 'css' },
         -- Autoinstall languages that are not installed
         auto_install = true,
         highlight = { enable = true },
